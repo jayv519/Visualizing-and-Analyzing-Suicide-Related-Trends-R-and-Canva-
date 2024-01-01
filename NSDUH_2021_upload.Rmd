@@ -1,0 +1,1003 @@
+---
+title: "NSDUH 2021 Data Exploration"
+author: "Jorge Valderrama"
+date: "December 2023"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+setwd("~/Downloads")
+```
+
+```{r}
+library(tidyverse)
+library(effsize)
+library(broom)
+library(rstatix)
+```
+
+```{r}
+load("NSDUH_2021.rdata")
+```
+
+```{r}
+#Changing Data Frame Name
+SUI_2021 <- PUF2021_100622
+```
+
+```{r}
+#Creating new data frame with select variables from the original list of 2988 variables
+SUI_2021_S <- SUI_2021 %>% 
+  select(AGE3, CATAG2, irsex, tobyr, alcyr, mrjyr, cocyr, heryfu ,hallucyfq, methamyfq, IRALCBNG30D , iralcage, irpmnicdep, IRPYUD5ALC, IRPYUD5MRJ, IRPYUD5COC, IRPYUD5HER, IRPYUD5ALC, IRPYUD5MTH, IRUD5PNRMIS , KSSLR6YRED, whodassced, whodasdaed, irsuicthnk, irsuiplanyr, irsuitryyr,KSSLR6MON, spdpstmon, spdpstyr, iramdelt, iramdeyr, ymdelt, ymdeyr, YMDEAUD5YR, YMIUD5YANY, YMSUD5YANY, yrxmdeyr, mdeimpy, talkprob, PRBSOLV2)
+
+```
+
+```{r}
+#Checking structure of data
+str(SUI_2021_S)
+```
+
+```{r}
+#creating new age variable where 1 = 12-17, 2 = 18 and over
+SUI_2021_S <- SUI_2021_S %>%
+  mutate(new_age = ifelse(CATAG2 == 1, 1, ifelse(CATAG2 == 2, 2, 2)))
+```
+
+```{r}
+#creating a data frame for participant 18 and over
+
+SUI_2021_Adult <- SUI_2021_S %>%
+   filter(new_age == 2)
+```
+
+```{r}
+#creating a data set for ages 12-17
+SUI_2021_Youth <- SUI_2021_S %>%
+   filter(new_age == 1)
+```
+
+
+```{r}
+#Checking out data
+SUI_2021_Adult %>% gather() %>%
+  ggplot(aes(x=value)) + 
+  geom_histogram(fill="steelblue", alpha=.7) +
+  theme_minimal() +
+  facet_wrap(~key, scales="free")
+```
+
+```{r}
+#Checking continuous variables and suicidal ideation
+SUI_2021_Adult %>% select(c(KSSLR6YRED, whodasdaed, whodassced, KSSLR6MON, irsuicthnk)) %>%
+  pivot_longer(!irsuicthnk, values_to = "value") %>%
+  ggplot(aes(x=factor(irsuicthnk), y=value, fill=factor(irsuicthnk))) +
+  geom_boxplot(outlier.shape = NA) + geom_jitter(size=.001, width=.1, alpha=.3) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  labs(fill="Suicidal Ideation:") +
+  theme_minimal() +
+  facet_wrap(~name, scales="free")
+```
+```{r}
+# Renaming variables 
+variables_to_rename <- c("IRALCBNG30D", "iralcage","IRPYUD5ALC", "IRPYUD5MRJ", "IRPYUD5COC","IRPYUD5HER", "IRPYUD5MTH", "IRUD5PNRMIS" ,"KSSLR6YRED", "whodassced", "whodasdaed", "irsuicthnk", "irsuiplanyr", "irsuitryyr", "KSSLR6MON","spdpstmon", "spdpstyr", "iramdelt", "iramdeyr")
+new_variable_names <- c("Binge_Drink_Past_Month","Alcohol_Age_of_First_Use","Alcohol_Use_Disorder", "Marijuana_Use_Disorder","Cocaine_Use_Disorder","Heroin_Use_Disorder", "Meth_Use_Disorder", "Pain_Reliever_UD", "Psych_Distress_Worst_Month", "Emotional_Impairment", "Emotional_Impairment_2", "Suicidal_Ideation","Suicide_Plan","Suicide_Attempt" ,"Psych_Distress_Past_Month", "Serious_Psych_Distress_Past_Month", "Serious_Psych_Distress_Past_Year", "Lifetime_MDD_Episode", "Past_Year_MDD_Episode")
+
+# Create a new data frame with the modified names
+SUI_2021_Adult_new_names <- SUI_2021_Adult
+
+# Change the names of the selected variables
+colnames(SUI_2021_Adult_new_names)[colnames(SUI_2021_Adult_new_names) %in% variables_to_rename] <- new_variable_names
+
+```
+
+```{r}
+#Suicidal Ideation Frequency
+suicidal_ideation_table <- table(SUI_2021_Adult_new_names$Suicidal_Ideation)
+suicidal_ideation_percentage <- prop.table(suicidal_ideation_table) * 100
+
+result_table <- cbind(Frequency = suicidal_ideation_table, Percentage = suicidal_ideation_percentage)
+print(result_table)
+```
+
+```{r}
+#Suicide Plan Frequency
+suicide_plan_table <- table(SUI_2021_Adult_new_names$Suicide_Plan)
+suicide_plan_percentage <- prop.table(suicide_plan_table) * 100
+
+result_table2 <- cbind(Frequency = suicide_plan_table, Percentage = suicide_plan_percentage)
+print(result_table2)
+```
+
+```{r}
+#Suicide Attempt Frequency
+suicide_attempt_table <- table(SUI_2021_Adult_new_names$Suicide_Attempt)
+suicide_attempt_percentage <- prop.table(suicide_attempt_table) * 100
+
+result_table3 <- cbind(Frequency = suicide_attempt_table, Percentage = suicide_attempt_percentage)
+print(result_table3)
+```
+
+```{r}
+#MDD Past Year Frequency
+Past_Year_MDD_Episode_table <- table(SUI_2021_Adult_new_names$Past_Year_MDD_Episode)
+Past_Year_MDD_Episode_percentage <- prop.table(Past_Year_MDD_Episode_table) * 100
+
+result_table4 <- cbind(Frequency = Past_Year_MDD_Episode_table, Percentage = Past_Year_MDD_Episode_percentage)
+print(result_table4)
+```
+
+
+```{r}
+#Continuous variables renamed and suicidal ideation
+SUI_2021_Adult_new_names %>% select(c(Psych_Distress_Worst_Month, Emotional_Impairment, Emotional_Impairment_2, Psych_Distress_Past_Month, Suicidal_Ideation)) %>%
+  pivot_longer(!Suicidal_Ideation, values_to = "value") %>%
+  ggplot(aes(x=factor(Suicidal_Ideation), y=value, fill=factor(Suicidal_Ideation))) +
+  geom_boxplot(outlier.shape = NA) + geom_jitter(size=.001, width=.1, alpha=.3) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  labs(fill="Suicidal Ideation:") +
+  theme_minimal() +
+  facet_wrap(~name, scales="free")+
+  ggtitle("Psychological Distress/Impairment and Suicidal Ideation in the Past Year")+
+  theme(axis.title.x = element_blank())
+```
+```{r}
+#Continuous variables renamed and suicide plan
+SUI_2021_Adult_new_names %>% select(c(Psych_Distress_Worst_Month, Emotional_Impairment, Emotional_Impairment_2, Psych_Distress_Past_Month, Suicide_Plan)) %>%
+  pivot_longer(!Suicide_Plan, values_to = "value") %>%
+  ggplot(aes(x=factor(Suicide_Plan), y=value, fill=factor(Suicide_Plan))) +
+  geom_boxplot(outlier.shape = NA) + geom_jitter(size=.001, width=.1, alpha=.3) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  labs(fill="Suicidal Plan:") +
+  theme_minimal() +
+  facet_wrap(~name, scales="free")+ 
+  ggtitle("Psychological Distress/Impairment and Suicide Plan in the Past Year")+
+  theme(axis.title.x = element_blank())
+```
+```{r}
+#Continuous variables renamed and suicide attempt
+SUI_2021_Adult_new_names %>% select(c(Psych_Distress_Worst_Month, Emotional_Impairment, Emotional_Impairment_2, Psych_Distress_Past_Month, Suicide_Attempt)) %>%
+  pivot_longer(!Suicide_Attempt, values_to = "value") %>%
+  ggplot(aes(x=factor(Suicide_Attempt), y=value, fill=factor(Suicide_Attempt))) +
+  geom_boxplot(outlier.shape = NA) + geom_jitter(size=.001, width=.1, alpha=.3) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  labs(fill="Suicidal Attempt:") +
+  theme_minimal() +
+  facet_wrap(~name, scales="free")+ 
+  ggtitle("Psychological Distress/Impairment and Suicide Attempt in the Past Year")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())
+```
+```{r}
+#Just Emotional Impairment variables and Attempt
+SUI_2021_Adult_new_names %>% select(c(Emotional_Impairment, Emotional_Impairment_2,Suicide_Attempt)) %>%
+  pivot_longer(!Suicide_Attempt, values_to = "value") %>%
+  ggplot(aes(x=factor(Suicide_Attempt), y=value, fill=factor(Suicide_Attempt))) +
+  geom_boxplot(outlier.shape = NA) + geom_jitter(size=.1, width=.3, alpha=.3) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  labs(fill="Suicide Attempt:") +
+  theme_minimal() +
+  facet_wrap(~name, scales="free")+ 
+  ggtitle("Impairment Due to Emotional Distress and Suicide Attempt in the Past Year")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14))+
+  theme(plot.title = element_text(hjust = 0.1, lineheight = 0.9))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))
+  
+```
+```{r}
+#Just psychological distress variables and attempt
+SUI_2021_Adult_new_names %>% select(c(Psych_Distress_Worst_Month,Psych_Distress_Past_Month, Suicide_Attempt)) %>%
+  pivot_longer(!Suicide_Attempt, values_to = "value") %>%
+  ggplot(aes(x=factor(Suicide_Attempt), y=value, fill=factor(Suicide_Attempt))) +
+  geom_boxplot(outlier.shape = NA) + geom_jitter(size=.001, width=.1, alpha=.3) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  labs(fill="Suicidal Attempt:") +
+  theme_minimal() +
+  facet_wrap(~name, scales="free")+ 
+  ggtitle("Psychological Distress and Suicide Attempt in the Past Year")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))
+```
+
+
+```{r}
+#Binge drink past month and ideation
+SUI_2021_Adult_new_names %>% select(c(Binge_Drink_Past_Month, Suicidal_Ideation)) %>%
+  pivot_longer(!Suicidal_Ideation, values_to = "value") %>%
+  ggplot(aes(x=factor(Suicidal_Ideation), y=value, fill=factor(Suicidal_Ideation))) +
+  geom_boxplot(outlier.shape = NA) + geom_jitter(size=.7, width=.1, alpha=.5) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  labs(fill="Suicidal Ideation:") +
+  theme_minimal() +
+  facet_wrap(~name, scales="free")
+ 
+```
+```{r}
+#the last chart includes "93" and "91" responses, which need to be deleted since they indiciate a person has not had alcohol in the past month or has ever drank
+SUI_2021_Binge <- SUI_2021_Adult_new_names %>%
+  filter(Binge_Drink_Past_Month >= 1 & Binge_Drink_Past_Month <= 30)
+```
+
+```{r}
+#Binge drink past month and ideation in new data frame
+SUI_2021_Binge %>% select(c(Binge_Drink_Past_Month, Suicidal_Ideation)) %>%
+  pivot_longer(!Suicidal_Ideation, values_to = "value") %>%
+  ggplot(aes(x=factor(Suicidal_Ideation), y=value, fill=factor(Suicidal_Ideation))) +
+  geom_boxplot(outlier.shape = NA) + geom_jitter(size=.7, width=.1, alpha=.5) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  labs(fill="Suicidal Ideation:") +
+  theme_minimal() +
+  facet_wrap(~name, scales="free")+
+  ggtitle("Number of Days of Binge Drinking in Past Month and Suicidal Ideation")+
+  theme(axis.title.x = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))
+```
+```{r}
+#Binge drink past month and attempt
+SUI_2021_Binge %>% select(c(Binge_Drink_Past_Month, Suicide_Attempt)) %>%
+  pivot_longer(!Suicide_Attempt, values_to = "value") %>%
+  ggplot(aes(x=factor(Suicide_Attempt), y=value, fill=factor(Suicide_Attempt))) +
+  geom_boxplot(outlier.shape = NA) + geom_jitter(size=.7, width=.1, alpha=.5) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  labs(fill="Suicide Attempt:") +
+  theme_minimal() +
+  facet_wrap(~name, scales="free")+
+  ggtitle("Number of Days of Binge Drinking in Past Month and Suicide Attempt")+
+  theme(axis.title.x = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))
+```
+
+```{r}
+#New data frame for alcohol users
+SUI_2021_Alc_Age <- SUI_2021_Adult_new_names %>%
+  filter(Alcohol_Age_of_First_Use >= 1 & Alcohol_Age_of_First_Use <= 99)
+
+```
+
+```{r}
+#Alcohol age of first use and ideation
+SUI_2021_Alc_Age %>% select(c(Alcohol_Age_of_First_Use, Suicidal_Ideation)) %>%
+  pivot_longer(!Suicidal_Ideation, values_to = "value") %>%
+  ggplot(aes(x=factor(Suicidal_Ideation), y=value, fill=factor(Suicidal_Ideation))) +
+  geom_boxplot(outlier.shape = NA) + geom_jitter(size=.7, width=.1, alpha=.5) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  labs(fill="Suicidal Ideation:") +
+  theme_minimal() +
+  facet_wrap(~name, scales="free")+
+  ggtitle("Alcohol - Age of First Use and Suicidal Ideation")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())
+```
+```{r}
+#Alcohol age of first use and attempt
+SUI_2021_Alc_Age %>% select(c(Alcohol_Age_of_First_Use, Suicide_Attempt)) %>%
+  pivot_longer(!Suicide_Attempt, values_to = "value") %>%
+  ggplot(aes(x=factor(Suicide_Attempt), y=value, fill=factor(Suicide_Attempt))) +
+  geom_boxplot(outlier.shape = NA) + geom_jitter(size=.7, width=.1, alpha=.5) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  labs(fill="Suicide Attempt:") +
+  theme_minimal() +
+  facet_wrap(~name, scales="free")+
+  ggtitle("Alcohol - Age of First Use and Suicide Attempt")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())
+```
+
+```{r}
+#For categorical variables, using simple stacked barplots to show the differences between people without or without serious suicide ideation in the past year:
+SUI_2021_Adult_new_names %>% select(Alcohol_Use_Disorder, Marijuana_Use_Disorder,Cocaine_Use_Disorder,Heroin_Use_Disorder,Meth_Use_Disorder,Pain_Reliever_UD,Serious_Psych_Distress_Past_Month,Suicidal_Ideation, Serious_Psych_Distress_Past_Year,Lifetime_MDD_Episode, Past_Year_MDD_Episode) %>% 
+  pivot_longer(!Suicidal_Ideation, values_to = "value") %>%
+  ggplot(aes(x=factor(value), fill=factor(Suicidal_Ideation))) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  geom_bar(position="fill", alpha=.7)+
+  theme_minimal() +
+  labs(fill="Suicidal Ideation:") +
+  facet_wrap(~name, scales="free")
+```
+
+```{r}
+#Just SUD and Ideation
+SUI_2021_Adult_new_names %>% select(Alcohol_Use_Disorder,Marijuana_Use_Disorder,Cocaine_Use_Disorder,Meth_Use_Disorder,Heroin_Use_Disorder, Pain_Reliever_UD ,Suicidal_Ideation) %>% 
+  pivot_longer(!Suicidal_Ideation, values_to = "value") %>%
+  ggplot(aes(x=factor(value), fill=factor(Suicidal_Ideation))) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  geom_bar(position="fill", alpha=.7)+
+  theme_minimal() +
+  labs(fill="Suicidal Ideation:") +
+  facet_wrap(~name, scales="free") +
+   ggtitle("Substance Use Disorder and Suicidal Ideation in the Past Year")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))
+```
+```{r}
+#SUD and Plan
+SUI_2021_Adult_new_names %>% select(Alcohol_Use_Disorder, Marijuana_Use_Disorder,Cocaine_Use_Disorder,Meth_Use_Disorder,Heroin_Use_Disorder, Pain_Reliever_UD,Suicide_Plan) %>% 
+  pivot_longer(!Suicide_Plan, values_to = "value") %>%
+  ggplot(aes(x=factor(value), fill=factor(Suicide_Plan))) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  geom_bar(position="fill", alpha=.7)+
+  theme_minimal() +
+  labs(fill="Suicide_Plan:") +
+  facet_wrap(~name, scales="free") +
+   ggtitle("Substance Use Disorder and Suicide Plan in the Past Year")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))
+```
+
+```{r}
+#SUD and Attempt
+SUI_2021_Adult_new_names %>% select(Alcohol_Use_Disorder, Marijuana_Use_Disorder,Cocaine_Use_Disorder,Meth_Use_Disorder,Heroin_Use_Disorder, Pain_Reliever_UD,Suicide_Attempt) %>% 
+  pivot_longer(!Suicide_Attempt, values_to = "value") %>%
+  ggplot(aes(x=factor(value), fill=factor(Suicide_Attempt))) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  geom_bar(position="fill", alpha=.7)+
+  theme_minimal() +
+  labs(fill="Suicide_Attempt:") +
+  facet_wrap(~name, scales="free") +
+   ggtitle("Substance Use Disorder and Suicide Attempt in the Past Year")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))
+```
+
+```{r}
+#Distress, MDD, and Ideation
+SUI_2021_Adult_new_names %>% select(Serious_Psych_Distress_Past_Month,Suicidal_Ideation, Serious_Psych_Distress_Past_Year,Lifetime_MDD_Episode, Past_Year_MDD_Episode) %>% 
+  pivot_longer(!Suicidal_Ideation, values_to = "value") %>%
+  ggplot(aes(x=factor(value), fill=factor(Suicidal_Ideation))) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  geom_bar(position="fill", alpha=.7)+
+  theme_minimal() +
+  labs(fill="Suicidal Ideation:") +
+  facet_wrap(~name, scales="free")+
+  ggtitle("Major Depressive Disorder/Psychological Distress and Suicidal Ideation")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))
+```
+
+```{r}
+#Distress, MDD, and Plan
+SUI_2021_Adult_new_names %>% select(Serious_Psych_Distress_Past_Month,Suicide_Plan, Serious_Psych_Distress_Past_Year,Lifetime_MDD_Episode, Past_Year_MDD_Episode) %>% 
+  pivot_longer(!Suicide_Plan, values_to = "value") %>%
+  ggplot(aes(x=factor(value), fill=factor(Suicide_Plan))) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  geom_bar(position="fill", alpha=.7)+
+  theme_minimal() +
+  labs(fill="Suicide_Plan:") +
+  facet_wrap(~name, scales="free")+
+  ggtitle("Major Depressive Disorder/Psychological Distress and Suicide Plan")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))
+```
+
+```{r}
+#Distress, MDD, and Attempt
+SUI_2021_Adult_new_names %>% select(Serious_Psych_Distress_Past_Month,Suicide_Attempt, Serious_Psych_Distress_Past_Year,Lifetime_MDD_Episode, Past_Year_MDD_Episode) %>% 
+  pivot_longer(!Suicide_Attempt, values_to = "value") %>%
+  ggplot(aes(x=factor(value), fill=factor(Suicide_Attempt))) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  geom_bar(position="fill", alpha=.7)+
+  theme_minimal() +
+  labs(fill="Suicide_Attempt:") +
+  facet_wrap(~name, scales="free")+
+  ggtitle("Major Depressive Disorder/Psychological Distress and Suicide_Attempt")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))
+```
+
+
+```{r}
+#variables for ease of putting them into analyses
+#"Marijuana_Use_Disorder","Cocaine_Use_Disorder","Heroin_Use_Disorder", "Meth_Use_Disorder", "Pain_Reliever_Use_Disorder", "Psych_Distress_Worst_Month", "Emotional_Impairment", "Emotional_Impairment_2", "Suicidal_Ideation","Suicide_Plan","Suicide_Attempt" ,"Psych_Distress_Past_Month", "Serious_Psych_Distress_Past_Month", "Serious_Psych_Distress_Past_Year", "Lifetime_MDD_Episode", "Past_Year_MDD_Episode")
+```
+
+##Some statistical analyses
+```{r}
+library(janitor)
+#Chi-square comparing Heroin Use Disorder in the past year (yes or no) and suicidal ideation (yes or no)
+SUI_2021_Adult_new_names %>% 
+  tabyl(Heroin_Use_Disorder, Suicidal_Ideation) %>% 
+  janitor::chisq.test()
+```
+
+```{r}
+#Chi-square comparing Pain Reliever Use Disorder in the past year (yes or no) and suicidal ideation (yes or no)
+SUI_2021_Adult_new_names %>% 
+  tabyl(Pain_Reliever_UD, Suicidal_Ideation) %>% 
+  janitor::chisq.test()
+```
+
+```{r}
+#Chi-square comparing Cocaine Use Disorder in the past year (yes or no) and suicidal ideation (yes or no)
+SUI_2021_Adult_new_names %>% 
+  tabyl(Cocaine_Use_Disorder, Suicidal_Ideation) %>% 
+  janitor::chisq.test()
+```
+
+```{r}
+#Chi-square comparing Marijuana Use Disorder in the past year (yes or no) and suicidal ideation (yes or no)
+SUI_2021_Adult_new_names %>% 
+  tabyl(Cocaine_Use_Disorder, Suicidal_Ideation) %>% 
+  janitor::chisq.test()
+```
+
+```{r}
+#Chi-square comparing Methamphetamine Use Disorder in the past year (yes or no) and suicidal ideation (yes or no)
+SUI_2021_Adult_new_names %>% 
+  tabyl(Meth_Use_Disorder, Suicidal_Ideation) %>% 
+  janitor::chisq.test()
+```
+
+```{r}
+#Heroin Use Disorder and attempt
+SUI_2021_Adult_new_names %>% 
+  tabyl(Heroin_Use_Disorder, Suicide_Attempt) %>% 
+  janitor::chisq.test()
+```
+
+```{r}
+#Pain Reliever Use Disorder and suicide attempt
+SUI_2021_Adult_new_names %>% 
+  tabyl(Pain_Reliever_UD, Suicide_Attempt) %>% 
+  janitor::chisq.test()
+```
+
+```{r}
+#CUD and attempt
+SUI_2021_Adult_new_names %>% 
+  tabyl(Cocaine_Use_Disorder, Suicide_Attempt) %>% 
+  janitor::chisq.test()
+```
+
+```{r}
+#MUD and attempt
+SUI_2021_Adult_new_names %>% 
+  tabyl(Marijuana_Use_Disorder, Suicide_Attempt) %>% 
+  janitor::chisq.test()
+```
+
+```{r}
+#meth use and attempt
+SUI_2021_Adult_new_names %>% 
+  tabyl(Meth_Use_Disorder, Suicide_Attempt) %>% 
+  janitor::chisq.test()
+```
+
+```{r}
+#Alcohol Use Past Year and Attempt
+SUI_2021_Adult_new_names %>% 
+  tabyl(alcyr, Suicide_Attempt) %>% 
+  janitor::chisq.test()
+```
+
+```{r}
+#Alcohol Use Past Year and ideation
+SUI_2021_Adult_new_names %>% 
+  tabyl(alcyr, Suicidal_Ideation) %>% 
+  janitor::chisq.test()
+```
+
+```{r}
+#Marijuana use past year and attempt
+SUI_2021_Adult_new_names %>% 
+  tabyl(mrjyr, Suicide_Attempt) %>% 
+  janitor::chisq.test()
+```
+
+```{r}
+SUI_2021_Adult_new_names %>% 
+  t_test(Emotional_Impairment ~ Suicidal_Ideation, var.equal = TRUE)
+```
+##Checking other t-tests
+```{r}
+#Calculate Welch's T-test (modification of the t-test that is robust to unequal variances and sample sizes)
+SUI_2021_Adult_new_names %>%
+  t_test(Emotional_Impairment ~ Suicidal_Ideation, var.equal = FALSE, paired = FALSE)
+```
+
+```{r}
+# Perform Mann-Whitney U test (does not assume normality)
+SUI_2021_Adult_new_names %>%
+  wilcox_test(Emotional_Impairment ~ Suicidal_Ideation, paired = FALSE)
+```
+
+```{r}
+SUI_2021_Adult_new_names %>% 
+  t_test(Emotional_Impairment_2 ~ Suicidal_Ideation, var.equal = TRUE)
+
+```
+
+```{r}
+SUI_2021_Adult_new_names %>% 
+  t_test(Psych_Distress_Past_Month ~ Suicidal_Ideation, var.equal = TRUE)
+```
+
+```{r}
+SUI_2021_Adult_new_names %>% 
+  t_test(Psych_Distress_Worst_Month ~ Suicidal_Ideation, var.equal = TRUE)
+```
+
+```{r}
+#creating a data set for adults with an MDD episode in the past year
+
+MDD_Adult <- SUI_2021_Adult_new_names %>%
+   filter(Past_Year_MDD_Episode == 1)
+```
+
+```{r}
+MDD_Adult %>% select(c(Emotional_Impairment, Emotional_Impairment_2,Suicide_Attempt)) %>%
+  pivot_longer(!Suicide_Attempt, values_to = "value") %>%
+  ggplot(aes(x=factor(Suicide_Attempt), y=value, fill=factor(Suicide_Attempt))) +
+  geom_boxplot(outlier.shape = NA) + geom_jitter(size=.1, width=.3, alpha=.3) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  labs(fill="Suicide Attempt:") +
+  theme_minimal() +
+  facet_wrap(~name, scales="free")+ 
+  ggtitle("Impairment Due to Emotional Distress and Suicide Attempt in the Past Year")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14,hjust = 0.1))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))+
+  labs(subtitle = "MDD Cohort")+
+  theme(plot.subtitle = element_text(hjust = 0.5, lineheight = 0.9, face = "bold"))
+```
+
+```{r}
+MDD_Adult %>% select(c(Psych_Distress_Worst_Month,Psych_Distress_Past_Month, Suicide_Attempt)) %>%
+  pivot_longer(!Suicide_Attempt, values_to = "value") %>%
+  ggplot(aes(x=factor(Suicide_Attempt), y=value, fill=factor(Suicide_Attempt))) +
+  geom_boxplot(outlier.shape = NA) + geom_jitter(size=.001, width=.1, alpha=.3) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  labs(fill="Suicidal Attempt:") +
+  theme_minimal() +
+  facet_wrap(~name, scales="free")+ 
+  ggtitle("Psychological Distress and Suicide Attempt in the Past Year")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14,hjust = 0.1))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))+
+  labs(subtitle = "MDD Cohort")+
+  theme(plot.subtitle = element_text(hjust = 0.5, lineheight = 0.9, face = "bold"))
+```
+
+```{r}
+MDD_Adult %>% select(Marijuana_Use_Disorder,Cocaine_Use_Disorder,Meth_Use_Disorder,Suicidal_Ideation) %>% 
+  pivot_longer(!Suicidal_Ideation, values_to = "value") %>%
+  ggplot(aes(x=factor(value), fill=factor(Suicidal_Ideation))) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  geom_bar(position="fill", alpha=.7)+
+  theme_minimal() +
+  labs(fill="Suicidal Ideation:") +
+  facet_wrap(~name, scales="free")
+```
+
+```{r}
+MDD_Adult %>% select(Heroin_Use_Disorder, Pain_Reliever_UD,Suicidal_Ideation) %>% 
+  pivot_longer(!Suicidal_Ideation, values_to = "value") %>%
+  ggplot(aes(x=factor(value), fill=factor(Suicidal_Ideation))) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  geom_bar(position="fill", alpha=.7)+
+  theme_minimal() +
+  labs(fill="Suicidal Ideation:") +
+  facet_wrap(~name, scales="free")
+```
+
+
+
+```{r}
+MDD_Adult %>% select(Marijuana_Use_Disorder,Cocaine_Use_Disorder,Heroin_Use_Disorder,Meth_Use_Disorder,Pain_Reliever_UD,Serious_Psych_Distress_Past_Month,Suicide_Attempt, Serious_Psych_Distress_Past_Year) %>% 
+  pivot_longer(!Suicide_Attempt, values_to = "value") %>%
+  ggplot(aes(x=factor(value), fill=factor(Suicide_Attempt))) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  geom_bar(position="fill", alpha=.7)+
+  theme_minimal() +
+  labs(fill="Suicide Attempt:") +
+  facet_wrap(~name, scales="free")
+```
+
+```{r}
+str(MDD_Adult)
+```
+
+
+```{r}
+#removing unnecessary variables
+MDD_Adult_clean <- MDD_Adult %>%
+  select(-AGE3, - CATAG2, - irsex, - tobyr, - alcyr, - mrjyr, - cocyr, - heryfu, - hallucyfq, - methamyfq, - irpmnicdep,- ymdelt, - ymdeyr, - YMIUD5YANY, - YMDEAUD5YR, - YMSUD5YANY, - yrxmdeyr, - mdeimpy,- talkprob,- PRBSOLV2,- new_age,- Psych_Distress_Worst_Month, -Emotional_Impairment, -Emotional_Impairment_2, -Past_Year_MDD_Episode,-Lifetime_MDD_Episode, - Suicide_Plan,- Suicide_Attempt)
+```
+
+```{r}
+cormat <- cor(MDD_Adult_clean %>% keep(is.numeric))
+
+cormat %>% as.data.frame %>% mutate(var2=rownames(.)) %>%
+  pivot_longer(!var2, values_to = "value") %>%
+  ggplot(aes(x=name,y=var2,fill=abs(value),label=round(value,2))) +
+  theme(axis.text.x=element_text(angle=60, hjust=1))+
+  geom_tile() + geom_label() + xlab("") + ylab("") +
+  theme(plot.title = element_text(face = "bold", size = 14,hjust = 0.5))+
+  ggtitle("Correlation matrix") +
+  labs(fill="Correlation\n(absolute):")
+```
+
+```{r}
+MDD_Adult_Attempt <- MDD_Adult %>%
+  select(-AGE3, - CATAG2, - irsex, - tobyr, - alcyr, - mrjyr, - cocyr, - heryfu, - hallucyfq, - methamyfq, - irpmnicdep,- ymdelt, - ymdeyr, - YMIUD5YANY, - YMDEAUD5YR, - YMSUD5YANY, - yrxmdeyr, - mdeimpy,- talkprob,- PRBSOLV2,- new_age,- Psych_Distress_Worst_Month, -Emotional_Impairment, -Emotional_Impairment_2, -Past_Year_MDD_Episode,-Lifetime_MDD_Episode, - Suicide_Plan,- Suicidal_Ideation)
+```
+
+```{r}
+cormat <- cor(MDD_Adult_Attempt %>% keep(is.numeric))
+
+cormat %>% as.data.frame %>% mutate(var2=rownames(.)) %>%
+  pivot_longer(!var2, values_to = "value") %>%
+  ggplot(aes(x=name,y=var2,fill=abs(value),label=round(value,2))) +
+  theme(axis.text.x=element_text(angle=60, hjust=1))+
+  geom_tile() + geom_label() + xlab("") + ylab("") +
+  theme(plot.title = element_text(face = "bold", size = 14,hjust = 0.5))+
+  ggtitle("Correlation matrix") +
+  labs(fill="Correlation\n(absolute):")
+```
+
+```{r}
+#Creating new data set to include only individuals who experienced Suicidal Ideation in the past year
+Ideation_Adult <- SUI_2021_Adult_new_names %>%
+   filter(Suicidal_Ideation == 1)
+```
+
+```{r}
+Ideation_Clean <- Ideation_Adult %>%
+  select(-AGE3, - CATAG2, - irsex, - tobyr, - alcyr, - mrjyr, - cocyr, - heryfu, - hallucyfq, - methamyfq, - irpmnicdep,- ymdelt, - ymdeyr, - YMIUD5YANY, - YMDEAUD5YR, - YMSUD5YANY, - yrxmdeyr, - mdeimpy,- talkprob,- PRBSOLV2,- new_age,-Suicidal_Ideation)
+```
+
+```{r}
+cormat1 <- cor(Ideation_Clean %>% keep(is.numeric))
+
+cormat1 %>% as.data.frame %>% mutate(var2=rownames(.)) %>%
+  pivot_longer(!var2, values_to = "value") %>%
+  ggplot(aes(x=name,y=var2,fill=abs(value),label=round(value,2))) +
+  theme(axis.text.x=element_text(angle=60, hjust=1))+
+  geom_tile() + geom_label() + xlab("") + ylab("") +
+  theme(plot.title = element_text(face = "bold", size = 14,hjust = 0.5))+
+  ggtitle("Correlation matrix") +
+  labs(fill="Correlation\n(absolute):")
+```
+
+```{r}
+#Impairment due to emotional distress and attempt among ideators
+Ideation_Clean %>% select(c(Emotional_Impairment, Emotional_Impairment_2,Suicide_Attempt)) %>%
+  pivot_longer(!Suicide_Attempt, values_to = "value") %>%
+  ggplot(aes(x=factor(Suicide_Attempt), y=value, fill=factor(Suicide_Attempt))) +
+  geom_boxplot(outlier.shape = NA) + geom_jitter(size=.1, width=.3, alpha=.3) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  labs(fill="Suicide Attempt:") +
+  theme_minimal() +
+  facet_wrap(~name, scales="free")+ 
+  ggtitle("Impairment Due to Emotional Distress and Suicide Attempt in the Past Year")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14,hjust = 0.1))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))+
+  labs(subtitle = "(Individuals with Suicidal Ideation in Past Year)")+
+  theme(plot.subtitle = element_text(hjust = 0.5, lineheight = 0.9, face = "bold"))
+```
+
+```{r}
+#Distress among ideators
+Ideation_Clean %>% select(c(Psych_Distress_Worst_Month,Psych_Distress_Past_Month, Suicide_Attempt)) %>%
+  pivot_longer(!Suicide_Attempt, values_to = "value") %>%
+  ggplot(aes(x=factor(Suicide_Attempt), y=value, fill=factor(Suicide_Attempt))) +
+  geom_boxplot(outlier.shape = NA) + geom_jitter(size=.001, width=.1, alpha=.3) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  labs(fill="Suicidal Attempt:") +
+  theme_minimal() +
+  facet_wrap(~name, scales="free")+ 
+  ggtitle("Psychological Distress and Suicide Attempt in the Past Year")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14,hjust = 0.1))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))+
+  labs(subtitle = "(Individuals with Suicidal Ideation in Past Year)")+
+  theme(plot.subtitle = element_text(hjust = 0.5, lineheight = 0.9, face = "bold"))
+```
+
+```{r}
+#SUD among ideators
+Ideation_Clean %>% select(Alcohol_Use_Disorder,Marijuana_Use_Disorder,Cocaine_Use_Disorder,Heroin_Use_Disorder,Meth_Use_Disorder,Pain_Reliever_UD,Suicide_Attempt) %>% 
+  pivot_longer(!Suicide_Attempt, values_to = "value") %>%
+  ggplot(aes(x=factor(value), fill=factor(Suicide_Attempt))) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  geom_bar(position="fill", alpha=.7)+
+  theme_minimal() +
+  labs(fill="Suicide Attempt:") +
+  facet_wrap(~name, scales="free")+
+  ggtitle("Substance Use Disorder and Suicide Attempt in the Past Year")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))+
+  labs(subtitle = "(Individuals with Suicidal Ideation in Past Year)")+
+  theme(plot.subtitle = element_text(hjust = 0.5, lineheight = 0.9, face = "bold"))
+```
+
+```{r}
+SUI_2021_Binge2 <- Ideation_Clean %>%
+  filter(Binge_Drink_Past_Month >= 1 & Binge_Drink_Past_Month <= 30)
+```
+
+```{r}
+SUI_2021_Binge2 %>% select(c(Binge_Drink_Past_Month, Suicide_Attempt)) %>%
+  pivot_longer(!Suicide_Attempt, values_to = "value") %>%
+  ggplot(aes(x=factor(Suicide_Attempt), y=value, fill=factor(Suicide_Attempt))) +
+  geom_boxplot(outlier.shape = NA) + geom_jitter(size=.7, width=.1, alpha=.5) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  labs(fill="Suicide Attempt:") +
+  theme_minimal() +
+  facet_wrap(~name, scales="free")+
+  ggtitle("Number of Days of Binge Drinking in Past Month and Suicide Attempt")+
+  theme(axis.title.x = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))
+```
+
+```{r}
+#MDD and distress among ideators
+Ideation_Clean %>% select(Serious_Psych_Distress_Past_Month,Suicide_Attempt, Serious_Psych_Distress_Past_Year,Lifetime_MDD_Episode, Past_Year_MDD_Episode) %>% 
+  pivot_longer(!Suicide_Attempt, values_to = "value") %>%
+  ggplot(aes(x=factor(value), fill=factor(Suicide_Attempt))) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  geom_bar(position="fill", alpha=.7)+
+  theme_minimal() +
+  labs(fill="Suicide_Attempt:") +
+  facet_wrap(~name, scales="free")+
+  ggtitle("Major Depressive Disorder/Psychological Distress and Suicide_Attempt")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))+
+  labs(subtitle = "(Individuals with Suicidal Ideation in Past Year)")+
+  theme(plot.subtitle = element_text(hjust = 0.5, lineheight = 0.9, face = "bold"))
+```
+
+```{r}
+#new data frame, just individuals with a suicide plan
+Plan_Adult <- SUI_2021_Adult_new_names %>%
+   filter(Suicide_Plan == 1)
+```
+
+```{r}
+Plan_Adult %>% select(c(Emotional_Impairment, Emotional_Impairment_2,Suicide_Attempt)) %>%
+  pivot_longer(!Suicide_Attempt, values_to = "value") %>%
+  ggplot(aes(x=factor(Suicide_Attempt), y=value, fill=factor(Suicide_Attempt))) +
+  geom_boxplot(outlier.shape = NA) + geom_jitter(size=.1, width=.3, alpha=.3) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  labs(fill="Suicide Attempt:") +
+  theme_minimal() +
+  facet_wrap(~name, scales="free")+ 
+  ggtitle("Impairment Due to Emotional Distress and Suicide Attempt in the Past Year")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14,hjust = 0.1))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))+
+  labs(subtitle = "(Individuals with Suicide Plan in Past Year)")+
+  theme(plot.subtitle = element_text(hjust = 0.5, lineheight = 0.9, face = "bold"))
+```
+
+```{r}
+Plan_Adult %>% select(c(Psych_Distress_Worst_Month,Psych_Distress_Past_Month, Suicide_Attempt)) %>%
+  pivot_longer(!Suicide_Attempt, values_to = "value") %>%
+  ggplot(aes(x=factor(Suicide_Attempt), y=value, fill=factor(Suicide_Attempt))) +
+  geom_boxplot(outlier.shape = NA) + geom_jitter(size=.001, width=.1, alpha=.3) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  labs(fill="Suicidal Attempt:") +
+  theme_minimal() +
+  facet_wrap(~name, scales="free")+ 
+  ggtitle("Psychological Distress and Suicide Attempt in the Past Year")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14,hjust = 0.1))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))+
+  labs(subtitle = "(Individuals with Suicide Plan in Past Year)")+
+  theme(plot.subtitle = element_text(hjust = 0.5, lineheight = 0.9, face = "bold"))
+```
+
+```{r}
+Plan_Adult %>% select(Serious_Psych_Distress_Past_Month,Suicide_Attempt, Serious_Psych_Distress_Past_Year,Lifetime_MDD_Episode, Past_Year_MDD_Episode) %>% 
+  pivot_longer(!Suicide_Attempt, values_to = "value") %>%
+  ggplot(aes(x=factor(value), fill=factor(Suicide_Attempt))) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  geom_bar(position="fill", alpha=.7)+
+  theme_minimal() +
+  labs(fill="Suicide_Attempt:") +
+  facet_wrap(~name, scales="free")+
+  ggtitle("Major Depressive Disorder/Psychological Distress and Suicide_Attempt")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))+
+  labs(subtitle = "(Individuals with Suicide Plan in Past Year)")+
+  theme(plot.subtitle = element_text(hjust = 0.5, lineheight = 0.9, face = "bold"))
+```
+
+```{r}
+Plan_Adult%>% select(Alcohol_Use_Disorder,Marijuana_Use_Disorder,Cocaine_Use_Disorder,Heroin_Use_Disorder,Meth_Use_Disorder,Pain_Reliever_UD,Suicide_Attempt) %>% 
+  pivot_longer(!Suicide_Attempt, values_to = "value") %>%
+  ggplot(aes(x=factor(value), fill=factor(Suicide_Attempt))) +
+  scale_fill_manual(values=c("steelblue", "orangered1")) +
+  geom_bar(position="fill", alpha=.7)+
+  theme_minimal() +
+  labs(fill="Suicide Attempt:") +
+  facet_wrap(~name, scales="free")+
+  ggtitle("Substance Use Disorder and Suicide Attempt in the Past Year")+
+  theme(axis.title.x = element_blank())+
+  theme(axis.title.y = element_blank())+
+  theme(plot.title = element_text(face = "bold", size = 14))+
+  theme(legend.text = element_text(face = "bold", size = 10))+
+  theme(legend.title = element_text(face = "bold", size = 10))+
+  labs(subtitle = "(Individuals with Suicide Plan in Past Year)")+
+  theme(plot.subtitle = element_text(hjust = 0.5, lineheight = 0.9, face = "bold"))
+```
+
+```{r}
+# Fit the logistic regression model: Attempt outcome among planners 
+model <- glm(Suicide_Attempt ~ Alcohol_Use_Disorder + Marijuana_Use_Disorder +
+              Cocaine_Use_Disorder + Heroin_Use_Disorder + Meth_Use_Disorder +
+              Pain_Reliever_UD + Psych_Distress_Worst_Month,
+            data = Plan_Adult,
+            family = binomial)
+
+# Display the summary of the model
+summary(model)
+```
+
+```{r}
+
+library(broom)
+
+# Fit the logistic regression model
+model2 <- glm(Suicide_Attempt ~ Alcohol_Use_Disorder + Marijuana_Use_Disorder +
+              Cocaine_Use_Disorder + Heroin_Use_Disorder + Meth_Use_Disorder +
+              Pain_Reliever_UD + Psych_Distress_Worst_Month,
+            data = Plan_Adult,
+            family = binomial)
+
+# Display the summary of the model
+summary_table <- broom::tidy(model2)
+
+# Extract odds ratios and their confidence intervals
+odds_ratios <- exp(summary_table$estimate)
+conf_intervals <- exp(confint(model2))
+
+# Combine odds ratios and confidence intervals into a data frame
+results1 <- data.frame(
+  Variable = rownames(conf_intervals),
+  Odds_Ratio = odds_ratios,
+  Lower_CI = conf_intervals[, 1],
+  Upper_CI = conf_intervals[, 2]
+)
+
+# Print the results
+print(results1)
+```
+
+```{r}
+#Simple Tree model for assessing attempt among planners
+library(rpart)
+
+tree <- rpart(Suicide_Attempt ~ Alcohol_Use_Disorder + Marijuana_Use_Disorder +
+              Cocaine_Use_Disorder + Heroin_Use_Disorder + Meth_Use_Disorder +
+              Pain_Reliever_UD + Psych_Distress_Worst_Month, data = Plan_Adult, method = "class")
+
+par(mar = c(6, 6, 6, 6))
+plot(tree, uniform = TRUE)
+text(tree)
+```
+```{r}
+#Simple Tree model exporting to PDF since items were cutoff in previous output
+library(rpart)
+
+tree <- rpart(Suicide_Attempt ~ Alcohol_Use_Disorder + Marijuana_Use_Disorder +
+              Cocaine_Use_Disorder + Heroin_Use_Disorder + Meth_Use_Disorder +
+              Pain_Reliever_UD + Psych_Distress_Worst_Month, data = Plan_Adult, method = "class")
+
+pdf("decision_tree_ppt.pdf")
+plot(tree, uniform = TRUE)
+text(tree)
+dev.off()
+```
+
+
+```{r}
+#Checking distribution of scores from the Psych_Distress_Worst_Month scale
+Plan_Adult %>%
+  ggplot(aes(x = Psych_Distress_Worst_Month)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", aes(y = ..count..)) +
+  labs(title = "Distribution of Psych Distress Scores",
+       x = "Psych Distress Scores",
+       y = "Frequency")
+```
+
+```{r}
+#Since the scores are skewed, I want to take a look at the median to create a dichotomous variable
+
+# Summary statistics using dplyr
+summary_stats <- Plan_Adult %>%
+  summarize(
+    mean = mean(Psych_Distress_Worst_Month, na.rm = TRUE),
+    median = median(Psych_Distress_Worst_Month, na.rm = TRUE)
+  )
+
+# Print the summary statistics
+print(summary_stats)
+```
+
+
+```{r}
+#Create a new variable, median value split of Psych_Distress_Worst_Month (Yes/No)
+
+# Calculate the median of Psych_Distress_Worst_Month
+median_value <- median(Plan_Adult$Psych_Distress_Worst_Month, na.rm = TRUE)
+
+# Create a new variable 'Dichotomous_Var' based on the median
+Plan_Adult <- Plan_Adult %>%
+  mutate(PsychDistress_New = as.numeric(Psych_Distress_Worst_Month >= median_value))
+
+# View the modified dataframe
+head(Plan_Adult)
+```
+```{r}
+#Checking to see any changes to logistic regression with new psych distress variable replacing the origninal one (findings are very similar per the output)
+
+# Fit the logistic regression model: Attempt outcome among planners 
+model3 <- glm(Suicide_Attempt ~ Alcohol_Use_Disorder + Marijuana_Use_Disorder +
+              Cocaine_Use_Disorder + Heroin_Use_Disorder + Meth_Use_Disorder +
+              Pain_Reliever_UD + PsychDistress_New,
+            data = Plan_Adult,
+            family = binomial)
+
+# Display the summary of the model
+summary(model3)
+```
+
+
+

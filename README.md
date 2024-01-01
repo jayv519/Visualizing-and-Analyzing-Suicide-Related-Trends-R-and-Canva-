@@ -21,4 +21,6 @@ Exploring NSDUH 2021 Data_PPT_with_notes.pdf: Powerpoint presentation with selec
 
 Decision Tree made using Canva.png: Decision Tree that was created using Canva
 
+NSDUH-2021-codebook.pdf: Codebook provided by NSDUH, I reviewed to select variables for analysis
+
 

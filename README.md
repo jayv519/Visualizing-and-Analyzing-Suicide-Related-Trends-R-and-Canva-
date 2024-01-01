@@ -11,9 +11,13 @@ I created a total of 13 data frames by filtering the larger dataset, which were 
 
 Found in Files:
 NSDUH_2021_upload.Rmd: R Markdown file that includes all of the code I used in R
+
 NSDUH 2021 Data Exploration_R Markdown Output.pdf: Includes the code and all of the visualizations prepared
+
 Exploring NSDUH 2021 Data_PPT.pdf: Powerpoint presentation with select findings
+
 Exploring NSDUH 2021 Data_PPT_with_Notes.pdf: Powerpoint presentation with select findings and speaker notes
+
 Decision Tree made using Canva.png: Decision Tree that was created using Canva
 
 

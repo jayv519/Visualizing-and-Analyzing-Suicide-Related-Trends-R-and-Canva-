@@ -13,14 +13,14 @@ Found in Files:
 
 NSDUH_2021_upload.Rmd: R Markdown file that includes all of the code I used in R
 
-NSDUH 2021 Data Exploration_R Markdown Output.pdf: Includes the code and all of the visualizations prepared
+NSDUH 2021 Data Exploration_R Markdown Output.pdf: Includes the code and each visualization and statistical analysis prepared
 
 Exploring NSDUH 2021 Data_PPT.pdf: Powerpoint presentation with select findings
 
 Exploring NSDUH 2021 Data_PPT_with_notes.pdf: Powerpoint presentation with select findings and speaker notes
 
-Decision Tree made using Canva.png: Decision Tree that was created using Canva
+Decision Tree made using Canva.png: Decision Tree graphic that was created using Canva
 
-NSDUH-2021-codebook.pdf: Codebook provided by NSDUH, I reviewed to select variables for analysis
+NSDUH-2021-codebook.pdf: Codebook provided by NSDUH (I reviewed this to select variables for analysis)
 
 

@@ -7,7 +7,7 @@ The dataset includes data for 58,034 respondents and 2,988 variables
 
 I reviewed the codebook to initially extract 40 variables for exploration (including suicidal ideation, having a suicide plan, and having a suicide attempt in the past year)
 
-I created a total of 13 data frames by filtering the larger dataset, which were then used in my exploration of the data. The sizes of these data frames ranged from 972 respondents to 47,291.
+I created a total of 13 data frames by filtering the larger dataset, which were then used in my exploration of the data. The sizes of these data frames ranged from 972 observations (respondents) to 47,291.
 
 Found in Files:
 
